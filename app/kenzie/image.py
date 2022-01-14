@@ -1,19 +1,9 @@
-# from os import getenv, mkdir, listdir, walk
-from flask import safe_join, jsonify
+from werkzeug.datastructures import FileStorage
+from flask import safe_join, send_file
 import os
 
 FILES = os.getenv("FILES_DIRECTORY")
 EXTENSIONS = os.getenv("ALLOWED_EXTENSIONS").split(",")
-MAX_LENGTH = os.getenv("MAX_CONTENT_LENGTH")
-
-def create_folders():
-    if "files" not in os.listdir("./"):
-
-        os.mkdir(f'{FILES}')
-
-        for extension in EXTENSIONS:
-            path = f"{FILES}/{extension}"
-            os.mkdir(path)
 
 def list_all_images():
     dir_list = []
@@ -49,3 +39,36 @@ def define_download_path(file_name):
     path = safe_join(os.path.realpath(FILES),extension,file_name)
 
     return path
+
+def file_already_exists(filename: str, extension: str)-> bool:
+    extension_path = os.path.join(FILES, extension)
+
+    return filename in os.listdir(extension_path)
+
+def upload_image(file: FileStorage) -> None:
+    filename: str = file.filename
+
+    root, extension = os.path.splitext(filename)
+    extension = extension.replace(".", "")
+
+    if file_already_exists(filename, extension):
+        raise FileExistsError
+
+    saving_path = os.path.join(FILES, extension, filename)
+    print(saving_path)
+
+    file.save(saving_path)
+
+def download_zip(file_type: str, compression_ratio: str):
+    output_file = f'{file_type}.zip'
+    input_path = os.path.join(FILES, file_type)
+    output_path_file = os.path.join('/tmp', output_file)
+
+    if os.path.isfile(output_path_file):
+        os.remove(output_path_file)
+
+    command = f'zip -r -j -{compression_ratio} {output_path_file} {input_path}'
+
+    os.system(command)
+
+    return send_file(output_path_file, as_attachment=True)
