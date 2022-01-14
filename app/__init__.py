@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, send_file
 from werkzeug.datastructures import ImmutableMultiDict, FileStorage
-from app.kenzie import image
+from app.kenzie import EXTENSIONS, image
 from os import getenv
 
 MAX_CONTENT_LENGTH = int(getenv("MAX_CONTENT_LENGTH"))
@@ -25,10 +25,10 @@ def download_dir_as_zip():
 
     if not file_type:
         return {'msg': 'Query param `file_extension` is required'}, 400
+    if file_type not in EXTENSIONS:
+        return {'msg': 'Invalid extension'}, 404
     
-    image.download_zip(file_type, compression_ratio)
-
-    return ''
+    return image.download_zip(file_type, compression_ratio), 200
 
 
 
@@ -55,4 +55,4 @@ def upload_file():
         except :
             return {'msg': 'Extension not supported'}, 415
 
-    return ''
+    return '', 201
